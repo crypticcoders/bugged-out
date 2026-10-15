@@ -154,11 +154,13 @@ def generate_synthetic_dataset(
 
         t_global += window_size / 1000.0
 
+    df = pd.DataFrame(records)
     train_windows = int(total_windows * train_ratio)
     split_sample_idx = train_windows * window_size
     train_df = df.iloc[:split_sample_idx].copy().reset_index(drop=True)
     held_out_df = df.iloc[split_sample_idx:].copy().reset_index(drop=True)
 
     return train_df, held_out_df
+
 
 
