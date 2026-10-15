@@ -38,8 +38,9 @@ async def lifespan(app: FastAPI):
     print("[Startup] Initializing SQLite database...")
     init_db()
 
-    print("[Startup] Generating 12,000 physical sensor samples (70/30 train/held-out split)...")
-    train_data_df, held_out_data_df = generate_synthetic_dataset(total_samples=12000, window_size=256, train_ratio=0.7)
+    print("[Startup] Generating 25,600 physical sensor samples (70/30 train/held-out split)...")
+    train_data_df, held_out_data_df = generate_synthetic_dataset(total_samples=25600, window_size=256, train_ratio=0.7)
+
 
     print("[Startup] Training Dual-Stage ML & XAI Engine...")
     ml_engine.train_models(train_data_df, held_out_data_df, window_size=256)
