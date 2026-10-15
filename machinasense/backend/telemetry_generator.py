@@ -108,35 +108,27 @@ def generate_window_signal(
     }
 
 def generate_synthetic_dataset(
-    total_samples: int = 12000,
+    total_samples: int = 25600,
     window_size: int = 256,
     train_ratio: float = 0.7
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
-    Generates 12,000 synthetic samples across 5 fault classes and 3 machine regimes.
-    Splits strictly 70% Train / 30% Chronological Held-Out Test.
+    Generates 25,600 synthetic samples (100 windows of 256) across 5 fault classes and 3 machine regimes.
+    Splits strictly 70% Train / 30% Chronological Held-Out Test (70 train windows, 30 held-out windows).
     """
-    total_windows = int(np.ceil(total_samples / window_size))
-    windows_per_class = total_windows // 5
+    total_windows = total_samples // window_size
     records = []
     t_global = 0.0
 
     machines = list(MACHINE_PROFILES.keys())
 
-    # Generate sequential chronological windows cycling through normal and fault states
-    # representing realistic lifetime degradation and operational duty cycles
     for w_idx in range(total_windows):
-        # Class distribution: 40% Normal, 15% each fault class
-        if w_idx < int(total_windows * 0.40):
-            fault_class = 0
-        else:
-            # Distribute remaining 60% across fault classes 1, 2, 3, 4
-            fault_class = ((w_idx - int(total_windows * 0.40)) % 4) + 1
+        # 5 balanced classes: 0: Normal, 1: Bearing, 2: Unbalance, 3: Stator, 4: Misalignment
+        fault_class = w_idx % 5
 
-        machine_id = machines[w_idx % len(machines)]
+        machine_id = machines[(w_idx // 5) % len(machines)]
         nominal_rpm = MACHINE_PROFILES[machine_id]["nominal_rpm"]
-        # Introduce subtle realistic RPM jitter (±5%) and occasional regime shift
-        rpm_jitter = nominal_rpm * (1.0 + np.random.uniform(-0.06, 0.06))
+        rpm_jitter = nominal_rpm * (1.0 + np.random.uniform(-0.04, 0.04))
 
         w_data = generate_window_signal(
             fault_class=fault_class,
@@ -164,9 +156,9 @@ def generate_synthetic_dataset(
 
     df = pd.DataFrame(records).iloc[:total_samples]
     
-    # Chronological Split: First 70% for Training, Locked 30% for Held-Out Evaluation
     split_idx = int(len(df) * train_ratio)
     train_df = df.iloc[:split_idx].copy().reset_index(drop=True)
     held_out_df = df.iloc[split_idx:].copy().reset_index(drop=True)
 
     return train_df, held_out_df
+
