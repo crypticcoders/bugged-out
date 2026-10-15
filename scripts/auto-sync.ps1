@@ -1,18 +1,31 @@
 # Auto-sync script for bugged-out
-# Monitors c:\bugged out and pushes changes to https://github.com/crypticcoders/bugged-out
+# Monitors C:\bugged out and pushes changes to https://github.com/crypticcoders/bugged-out
 
-$Host.UI.RawUI.WindowTitle = "Git Auto-Sync (bugged-out)"
+try {
+    $Host.UI.RawUI.WindowTitle = "Git Auto-Sync (bugged-out)"
+} catch {
+    # Ignore when running hidden / redirected
+}
+
 $repoPath = "C:\bugged out"
 Set-Location $repoPath
 
-Write-Host "=================================================" -ForegroundColor Cyan
-Write-Host " Git Auto-Sync Started for crypticcoders/bugged-out" -ForegroundColor Green
-Write-Host " Repository: https://github.com/crypticcoders/bugged-out" -ForegroundColor DarkCyan
-Write-Host " Monitoring folder: $repoPath" -ForegroundColor Gray
-Write-Host " Press Ctrl+C in this window to stop auto-sync." -ForegroundColor Yellow
-Write-Host "=================================================`n" -ForegroundColor Cyan
+$logFile = Join-Path $repoPath ".autosync.log"
 
-$lastSync = Get-Date
+function Log-Message([string]$msg, [string]$color = "White") {
+    $entry = "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] $msg"
+    try {
+        Add-Content -Path $logFile -Value $entry -ErrorAction SilentlyContinue
+    } catch {}
+    Write-Host $entry -ForegroundColor $color
+}
+
+Log-Message "=================================================" "Cyan"
+Log-Message " Git Auto-Sync Started for crypticcoders/bugged-out" "Green"
+Log-Message " Repository: https://github.com/crypticcoders/bugged-out" "DarkCyan"
+Log-Message " Monitoring folder: $repoPath" "Gray"
+Log-Message " Press Ctrl+C in this window to stop auto-sync." "Yellow"
+Log-Message "=================================================" "Cyan"
 
 while ($true) {
     try {
@@ -20,34 +33,33 @@ while ($true) {
         $status = git status --porcelain
         
         if ($status) {
-            Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Change detected. Waiting 3 seconds for file writes to settle..." -ForegroundColor Yellow
+            Log-Message "Changes detected. Waiting 3 seconds for file writes to settle..." "Yellow"
             Start-Sleep -Seconds 3
 
-            # Check again to ensure files are still changed
+            # Check again to ensure changes are still present
             $statusAfter = git status --porcelain
             if ($statusAfter) {
-                Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Staging changes..." -ForegroundColor Cyan
+                Log-Message "Staging changes..." "Cyan"
                 git add -A
 
                 $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
                 $commitMsg = "Auto-sync: $timestamp"
 
-                Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Committing: '$commitMsg'..." -ForegroundColor Cyan
+                Log-Message "Committing: '$commitMsg'..." "Cyan"
                 $commitOutput = git commit -m "$commitMsg" 2>&1
 
-                Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Pushing to GitHub (origin/main)..." -ForegroundColor Cyan
+                Log-Message "Pushing to GitHub (origin/main)..." "Cyan"
                 $pushOutput = git push origin main 2>&1
                 
                 if ($LASTEXITCODE -eq 0) {
-                    Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Successfully synced to GitHub!" -ForegroundColor Green
-                    $lastSync = Get-Date
+                    Log-Message "Successfully synced to GitHub!" "Green"
                 } else {
-                    Write-Warning "[$(Get-Date -Format 'HH:mm:ss')] Push failed. Will retry on next cycle. Details:`n$pushOutput"
+                    Log-Message "Push failed. Will retry on next cycle. Details:`n$pushOutput" "Red"
                 }
             }
         }
     } catch {
-        Write-Warning "[$(Get-Date -Format 'HH:mm:ss')] An unexpected error occurred: $_"
+        Log-Message "Unexpected error: $_" "Red"
     }
 
     Start-Sleep -Seconds 4
