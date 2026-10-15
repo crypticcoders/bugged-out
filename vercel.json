@@ -1,0 +1,5 @@
+{
+  "buildCommand": "cd machinasense/frontend && npm install && npm run build",
+  "outputDirectory": "machinasense/frontend/.next",
+  "framework": "nextjs"
+}
