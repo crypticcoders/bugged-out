@@ -80,7 +80,7 @@ export default function ForensicEvidenceDrawer({
       );
       setTimeout(() => setSuccessMsg(null), 4000);
     } catch (e: any) {
-      alert(e.message || "Action failed");
+      console.error("Action error:", e.message || e);
     } finally {
       setIsSubmitting(false);
     }
