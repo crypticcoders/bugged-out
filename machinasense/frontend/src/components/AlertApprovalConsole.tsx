@@ -55,7 +55,7 @@ export default function AlertApprovalConsole() {
       setUploadResult(res);
       await loadAlerts();
     } catch (err: any) {
-      alert(err.message || "Upload failed");
+      console.error("Upload error:", err.message || err);
     } finally {
       setIsUploading(false);
     }
